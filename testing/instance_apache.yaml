@@ -1,0 +1,10 @@
+apiVersion: v1alpha1
+kind: Instance
+metadata:
+  name: apache-app
+spec:
+  application:
+    name: apache-app
+    image: apache:latest
+    ingress:
+      enabled: true

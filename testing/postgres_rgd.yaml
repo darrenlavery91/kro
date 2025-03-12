@@ -1,0 +1,98 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: postgres-db
+spec:
+  # kro uses this simple schema to create your CRD schema and apply it
+  # The schema defines what users can provide when they instantiate the RGD (create an instance).
+  schema:
+    apiVersion: v1alpha1
+    kind: Application
+    spec:
+      # Spec fields that users can provide.
+      name: string
+      image: string | default="postgres:latest"
+      ingress:
+        enabled: boolean | default=false
+      db:
+        type: string | default="postgres"
+        replicas: integer | default=1
+        user: string | default="postgres"
+        password: string | default="postgrespassword"
+        database: string | default="mydb"
+    status:
+      # Fields the controller will inject into instances status.
+      deploymentConditions: ${deployment.status.conditions}
+      availableReplicas: ${deployment.status.availableReplicas}
+
+  # Define the resources this API will manage.
+  resources:
+    - id: db-deployment
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: ${schema.spec.name}-db
+        spec:
+          replicas: ${schema.spec.db.replicas}
+          selector:
+            matchLabels:
+              app: ${schema.spec.name}-db
+          template:
+            metadata:
+              labels:
+                app: ${schema.spec.name}-db
+            spec:
+              containers:
+                - name: ${schema.spec.name}-db
+                  image: ${schema.spec.db.type}:latest # Use the database type (PostgreSQL)
+                  env:
+                    - name: POSTGRES_USER
+                      value: ${schema.spec.db.user}
+                    - name: POSTGRES_PASSWORD
+                      value: ${schema.spec.db.password}
+                    - name: POSTGRES_DB
+                      value: ${schema.spec.db.database}
+                  ports:
+                    - containerPort: 5432
+
+    - id: db-service
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: ${schema.spec.name}-db-service
+        spec:
+          selector:
+            app: ${db-deployment.spec.selector.matchLabels} # Use the db deployment selector
+          ports:
+            - protocol: TCP
+              port: 5432
+              targetPort: 5432
+
+    - id: ingress
+      includeWhen:
+        - ${schema.spec.ingress.enabled} # Only include if the user wants to create an Ingress
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: ${schema.spec.name}-db-ingress
+          annotations:
+            kubernetes.io/ingress.class: alb
+            alb.ingress.kubernetes.io/scheme: internet-facing
+            alb.ingress.kubernetes.io/target-type: ip
+            alb.ingress.kubernetes.io/healthcheck-path: /health
+            alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+            alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=60
+        spec:
+          rules:
+            - http:
+                paths:
+                  - path: "/"
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: ${db-service.metadata.name} # Use the db service name
+                        port:
+                          number: 5432

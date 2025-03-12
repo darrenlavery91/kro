@@ -1,0 +1,11 @@
+apiVersion: kro.run/v1alpha1
+kind: WebApp
+metadata:
+  name: doom-app
+spec:
+  name: doom-app
+  image: callumhoughton22/doom-in-docker:0.1
+  port: 8080
+  ingress:
+    enabled: true
+  service: {} # this is needed

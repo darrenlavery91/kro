@@ -1,6 +1,10 @@
-# Current Lab Setup
-
-Kind cluster - locally on mac (using podman backend)
+## Prerequisites
+Before you begin, ensure you have the following:
+- Docker or Podamn
+- Helm 3.x installed (if using Helm)
+- `kubectl` installed and configured to interact with your Kubernetes cluster
+- ansible or terraform
+- optional k9s
 
 # Preping DEMO with ansible
 ```sh
@@ -12,11 +16,6 @@ kind get clusters
 kubectl get ns
 ```
 # Installing Kro
-
-## Prerequisites
-Before you begin, ensure you have the following:
-- Helm 3.x installed (if using Helm)
-- `kubectl` installed and configured to interact with your Kubernetes cluster
 
 ```sh
 export KRO_VERSION=$(curl -sL \
@@ -70,13 +69,13 @@ kubectl get po,svc,ingress -n default
 # DEV wants to drop ingress version (edit the instance)
 image: nginx:1.26.0
 
-# DEV Wants to have fun
+# DEV Wants to have fun:
+```sh
 kubectl apply -f fun/doom-instance.yaml
 kubectl apply -f fun/doom-rg.yaml
 k9s
 <shift-f>
-
-
+```
 
 # Troubleshoot: rgd check the logs on the kro controller:
 ```sh

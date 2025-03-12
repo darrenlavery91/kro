@@ -3,9 +3,10 @@
 Kind cluster - locally on mac (using podman backend)
 
 # Preping DEMO with ansible
+```sh
 cd ansible
 ansible-playbook kind_build.yaml -v
-
+```
 ```sh
 kind get clusters
 kubectl get ns

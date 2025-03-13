@@ -2,7 +2,6 @@ apiVersion: kro.run/v1alpha1
 kind: Application
 metadata:
   name: my-application-instance
-  namespace: default
 spec:
   name: my-awesome-app
   ingress:

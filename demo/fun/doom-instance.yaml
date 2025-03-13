@@ -5,7 +5,7 @@ metadata:
 spec:
   name: doom-app
   image: callumhoughton22/doom-in-docker:0.1
-  port: 8080
+  port: 8085
   ingress:
     enabled: true
   service: {} # this is needed

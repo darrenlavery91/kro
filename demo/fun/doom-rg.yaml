@@ -10,7 +10,7 @@ spec:
       name: string
       namespace: string | default=default
       image: string | default=nginx
-      port: integer | default=8080
+      port: integer | default=8085
       replicas: integer | default=1
       service:
         enabled: boolean | default=true
@@ -81,7 +81,7 @@ spec:
         ports:
         - name: http
           protocol: TCP
-          port: 8080
+          port: 8085
           targetPort: ${schema.spec.port}
           
   - id: ingress
@@ -98,7 +98,7 @@ spec:
           alb.ingress.kubernetes.io/scheme: internet-facing
           alb.ingress.kubernetes.io/target-type: ip
           alb.ingress.kubernetes.io/healthcheck-path: /health
-          alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 8080}]'
+          alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 8085}]'
           alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=60
       spec:
         rules:
@@ -110,4 +110,4 @@ spec:
                 service:
                   name: ${service.metadata.name}
                   port:
-                    number: 8080
+                    number: 8085

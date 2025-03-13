@@ -3,6 +3,7 @@ Before you begin, ensure you have the following:
 - Docker or Podamn
 - Helm 3.x installed (if using Helm)
 - `kubectl` installed and configured to interact with your Kubernetes cluster
+- kind
 - ansible or terraform
 - optional k9s
 

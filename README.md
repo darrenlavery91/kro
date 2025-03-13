@@ -1,22 +1,37 @@
-## Prerequisites
-Before you begin, ensure you have the following:
-- Docker or Podamn
-- Helm 3.x installed (if using Helm)
-- `kubectl` installed and configured to interact with your Kubernetes cluster
-- kind
-- ansible or terraform
-- optional k9s
+# Prerequisites  
 
-# Preping DEMO with ansible
+Before you begin, ensure you have the following installed and configured:  
+
+- **Container Runtime:** Docker or Podman  
+- **Helm:** Version 3.x (if using Helm)  
+- **Kubernetes CLI:** `kubectl` installed and configured to interact with your Kubernetes cluster  
+- **Kind:** Kubernetes-in-Docker (kind) installed  
+- **Infrastructure Automation:** Ansible or Terraform  
+- **Optional Tools:** k9s (for better cluster management)  
+
+---
+
+# Setting Up the Demo with Ansible  
+
+Run the following Ansible playbook to prepare the demo environment:  
+
 ```sh
 cd ansible
 ansible-playbook kind_build.yaml -v
 ```
+
+Verify the setup:  
+
 ```sh
 kind get clusters
 kubectl get ns
 ```
-# Installing Kro
+
+---
+
+# Installing Kro  
+
+Fetch the latest Kro version and install it using Helm:  
 
 ```sh
 export KRO_VERSION=$(curl -sL \
@@ -24,8 +39,7 @@ export KRO_VERSION=$(curl -sL \
     jq -r '.tag_name | ltrimstr("v")'
   )
 
-echo $KRO_VERSION
-0.2.1
+echo $KRO_VERSION  # Example output: 0.2.1
 
 helm install kro oci://ghcr.io/kro-run/kro/kro \
   --namespace kro \
@@ -33,7 +47,8 @@ helm install kro oci://ghcr.io/kro-run/kro/kro \
   --version=${KRO_VERSION}
 ```
 
-Check running pods:
+Verify the installation:  
+
 ```sh
 kubectl get ns
 kubectl get pods -n kro
@@ -41,36 +56,67 @@ kubectl get pods -n kro
 
 ---
 
-# Terraform
+# Deploying Kro with Terraform  
+
+Initialize and apply the Terraform configuration:  
+
 ```sh
 terraform init
 terraform apply -var="kro_version=0.2.1"
 ```
 
-# Manual
+---
+
+# Manual Deployment  
+
+Navigate to the deployment directory and apply the necessary Kubernetes manifests:  
+
 ```sh
 cd /Users/darrenlavery/Documents/code/Kro_demo/kro-app/example-app/works/
 kubectl apply -f test-instance.yaml
 kubectl apply -f test-rgd.yaml
 ```
 
-# Check the RGD: 
+---
+
+# Verifying the Deployment  
+
+### Check the ResourceGraphDefinition (RGD) status  
+
 ```sh
-kubectl get rgd  -owide                           
+kubectl get rgd -o wide
+```
+
+**Example Output:**  
+
+```
 NAME             APIVERSION   KIND          STATE      TOPOLOGICALORDER                     AGE
 my-application   v1alpha1     Application   Active     ["deployment","service","ingress"]   5m43s
 postgres-db      v1alpha1     Application   Inactive                                        3s
 ```
 
-# Check deployment
-``` sh
+### Check the deployment status  
+
+```sh
 kubectl get po,svc,ingress -n default
 ```
 
-# DEV wants to drop ingress version (edit the instance)
-image: nginx:1.26.0
+---
 
-# DEV Wants to have fun:
+# Developer Workflow  
+
+### Updating Ingress Version  
+
+To modify the ingress version, update the instance specification:  
+
+```yaml
+image: nginx:1.26.0
+```
+
+### Fun Deployment  
+
+For developers who want to experiment:  
+
 ```sh
 kubectl apply -f fun/doom-instance.yaml
 kubectl apply -f fun/doom-rg.yaml
@@ -78,67 +124,67 @@ k9s
 <shift-f>
 ```
 
-# Troubleshoot: rgd check the logs on the kro controller:
+---
+
+# Troubleshooting  
+
+### Check Logs for Errors  
+
 ```sh
-NAME                  READY   STATUS    RESTARTS   AGE
-kro-b667bd485-q2lg2   1/1     Running   0          44m
-```
-```sh
+kubectl get pods -n kro
 kubectl logs kro-b667bd485-q2lg2 -n kro | grep ERROR
 ```
 
-# To remove inactive: 
+### Remove Inactive Resources  
+
 ```sh
-kubectl rgd delete postgres-db 
+kubectl rgd delete postgres-db
 ```
 
 ---
 
-# Understanding KRO
+# Understanding Kro  
 
-## Key Points about ResourceGraphDefinition
+## What is ResourceGraphDefinition (RGD)?  
 
-- **Schema Definition:** Defines the schema for the custom resource, specifying the fields that users can provide when creating an instance, including default values and types.
-- **Resource Templates:** Contains templates for Kubernetes resources that will be created based on the schema. These templates use placeholders to dynamically insert values provided by the instance.
-- **Dependency Management:** Ensures resources are created in the correct order (e.g., a Service depends on a Deployment being created first).
-- **Conditional Resources:** Supports conditional creation of resources, such as an Ingress being created only if `ingress.enabled` is set to `true`.
+A **ResourceGraphDefinition (RGD)** is a declarative way to define and manage related Kubernetes resources efficiently.  
 
-## Example Workflow
-1. **Define the ResourceGraphDefinition:** Create an RGD that specifies the schema and resource templates.
-2. **Create an Instance:** Use the `Instance` kind to create an instance based on the RGD, providing specific values for the schema fields.
-3. **Deploy Resources:** The instance uses the RGD to deploy the specified resources in the Kubernetes cluster.
+### **Key Features:**  
 
----
+- **Schema Definition:** Specifies the fields users can provide when creating an instance, including default values and types.  
+- **Resource Templates:** Uses templates to dynamically create Kubernetes resources based on the schema.  
+- **Dependency Management:** Ensures resources are created in the correct order (e.g., a Service depends on a Deployment).  
+- **Conditional Resources:** Supports conditions like enabling/disabling Ingress dynamically based on instance configurations.  
 
-# Comparison
+### **Workflow Overview:**  
 
-## Resource Management
-- **Normal Deployment:** Manage each resource (ConfigMap, Deployment, Namespace, Secret, Service) separately.
-- **ResourceGraphDefinition:** Define and manage multiple related resources as a single unit, ensuring consistency and correct order of creation.
-
-## Deployment
-- **Normal Deployment:** Uses standard Kubernetes resources with basic features.
-- **InstanceSet:** Extends capabilities with features like role-based management, high availability, and in-place updates, particularly useful for stateful workloads.
-
-## Scaling and Updates
-- **Normal Deployment:** Manual scaling and rolling updates with limited control.
-- **InstanceSet:** Efficient horizontal scaling and deterministic rolling updates, ensuring high availability and performance.
-
-## Network Identifiers
-- **Normal Deployment:** Standard network identifiers.
-- **InstanceSet:** Generates fixed names for each instance and creates a Headless Service, providing stable network identifiers.
+1. **Define the RGD:** Create an RGD that specifies the schema and templates.  
+2. **Instantiate Resources:** Use an `Instance` to deploy resources based on the RGD.  
+3. **Deploy to Kubernetes:** The RGD processes dependencies and provisions resources in the correct order.  
 
 ---
 
-# Summary
+# Comparison: Standard Kubernetes vs. Kro  
 
-### The main differences between using a ResourceGraphDefinition with InstanceSet and a normal Kubernetes deployment:
+| Feature | Standard Kubernetes | Kro (RGD + InstanceSet) |
+|---------|----------------------|------------------------|
+| **Resource Management** | Manages resources (ConfigMap, Deployment, Secret, etc.) separately. | Manages multiple related resources as a single unit. |
+| **Deployment Process** | Uses standard Kubernetes objects. | Extends capabilities with role-based management, HA, and updates. |
+| **Scaling & Updates** | Manual scaling and rolling updates. | Supports automatic scaling and rolling updates. |
+| **Dependency Handling** | Requires manual ordering of resource creation. | Ensures correct order with DAG-based execution. |
+| **Networking** | Uses standard Kubernetes networking. | Provides stable network identifiers via InstanceSet. |
 
-1. **Unified Management:** ResourceGraphDefinition allows defining and managing multiple related resources as a single, reusable unit. This ensures resources are deployed together with the correct configuration.
-2. **Dependency Management:** ResourceGraphDefinition treats resources as a Directed Acyclic Graph (DAG), ensuring correct deployment order based on interdependencies.
-3. **Custom APIs:** Creating a ResourceGraphDefinition generates a Custom Resource Definition (CRD) in your cluster, allowing for structured and controlled resource deployment.
-4. **InstanceSet Features:** Extends native Kubernetes resources like StatefulSet and Deployment with advanced features such as role-based management, high availability, and deterministic rolling updates.
-5. **Stable Network Identifiers:** InstanceSet assigns fixed names to instances and creates a Headless Service, ensuring stable network identifiers for communication.
-6. **Efficient Scaling and Updates:** Supports horizontal scaling and rolling updates, maintaining high availability and performance.
+---
 
-Using **ResourceGraphDefinition** and **InstanceSet** provides a more structured, efficient, and reliable way to manage complex deployments, especially for stateful workloads. It simplifies deployment, ensures consistency, and offers advanced features unavailable in standard Kubernetes deployments.
+# Summary  
+
+Using **ResourceGraphDefinition** and **InstanceSet** provides:  
+
+✅ **Unified Resource Management:** Manage multiple resources together, ensuring consistency.  
+✅ **Automated Dependency Management:** Uses DAG to order resource creation properly.  
+✅ **Custom APIs for Control:** Generates CRDs for structured deployment.  
+✅ **Advanced Features:** Enables role-based access, high availability, and deterministic updates.  
+✅ **Stable Networking:** Assigns fixed instance names with Headless Services for reliable networking.  
+✅ **Efficient Scaling:** Supports automatic scaling and controlled rolling updates.  
+
+By leveraging Kro’s **RGD** and **InstanceSet**, you simplify deployment, improve reliability, and gain powerful features beyond standard Kubernetes deployments. 🚀  

@@ -62,7 +62,8 @@ Initialize and apply the Terraform configuration:
 
 ```sh
 terraform init
-terraform apply -var="kro_version=0.2.1"
+terraform plan -out tfplan
+terraform apply tfplan -var="kro_version=0.2.1"
 ```
 
 ---
@@ -72,7 +73,7 @@ terraform apply -var="kro_version=0.2.1"
 Navigate to the deployment directory and apply the necessary Kubernetes manifests:  
 
 ```sh
-cd /Users/darrenlavery/Documents/code/Kro_demo/kro-app/example-app/works/
+cd ./demo/
 kubectl apply -f test-instance.yaml
 kubectl apply -f test-rgd.yaml
 ```

@@ -2,7 +2,7 @@ apiVersion: kro.run/v1alpha1
 kind: WebApp
 metadata:
   name: doom-app
-  namespace: doom
+  namespace: default
 spec:
   name: doom-app
   image: callumhoughton22/doom-in-docker:0.1
